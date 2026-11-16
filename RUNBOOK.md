@@ -4,6 +4,54 @@ Installs the Grafana Operator, connects Grafana to OpenShift's Thanos Querier, a
 
 The whole install is five commands. The checks around them are plain `oc` commands; nothing needs a script or extra tools.
 
+## How it fits together
+
+```mermaid
+flowchart LR
+    subgraph NODES["GPU worker nodes"]
+        GPU["NVIDIA GPUs<br/>whole cards or MIG slices"]
+        DCGM["DCGM exporter<br/>DaemonSet, port 9400"]
+        GPU --> DCGM
+    end
+
+    subgraph MON["openshift-monitoring"]
+        PROM["Prometheus<br/>scrapes via ServiceMonitor"]
+        KSM["kube-state-metrics<br/>node labels, allocatable"]
+        THANOS["Thanos Querier<br/>port 9091"]
+        KSM --> PROM
+        PROM --> THANOS
+    end
+
+    subgraph NS["gpu-monitoring namespace"]
+        OP["Grafana Operator"]
+        CRS["Grafana, GrafanaDatasource,<br/>GrafanaDashboard resources"]
+        SA["ServiceAccount grafana-thanos-reader<br/>cluster-monitoring-view + token"]
+        ADMIN["Secret grafana-admin-credentials"]
+        GRAF["Grafana<br/>PVC + Route"]
+        DASH["4 dashboards<br/>Fleet Summary, Fleet Telemetry,<br/>Utilisation by Application, XID Errors"]
+        CRS --> OP
+        ADMIN -. "API login" .-> OP
+        OP -- "deploys and configures" --> GRAF
+        GRAF --> DASH
+    end
+
+    DCGM -- "DCGM metrics" --> PROM
+    SA -. "bearer token" .-> GRAF
+    THANOS -- "PromQL over HTTPS" --> GRAF
+
+    REPO[("Git repo<br/>01-operator, 02-grafana,<br/>03-dashboards")] -- "oc apply -f" --> CRS
+    USERS(["Management, operators,<br/>application teams"]) -- "HTTPS Route" --> DASH
+```
+
+| Piece | Role |
+|---|---|
+| DCGM exporter | Runs on every GPU node (deployed by the NVIDIA GPU Operator) and publishes per-GPU and per-MIG-slice metrics, including which pod holds each device. |
+| Prometheus | OpenShift's built-in Prometheus scrapes the exporter, along with kube-state-metrics for node labels and allocatable GPUs. |
+| Thanos Querier | One query endpoint across the monitoring stack. Port 9091 is the cluster-wide one. |
+| Service account | `grafana-thanos-reader` has `cluster-monitoring-view`; its token is how Grafana authenticates to Thanos. |
+| Grafana Operator | Watches the Grafana, GrafanaDatasource and GrafanaDashboard resources and applies them to Grafana through its API, using the admin Secret to log in. |
+| Grafana | Runs in `gpu-monitoring` with a PVC for its data and an HTTPS Route for users. |
+
 ## Contents
 
 1. [Requirements](#1-requirements)
@@ -139,6 +187,26 @@ Put the CatalogSource name into `01-operator/operator.yaml` as `source`.
 ## 5. Install
 
 **These steps change the cluster.**
+
+The full sequence, including the loop for changing dashboards later (section 7):
+
+```mermaid
+flowchart TD
+    A["Check the cluster<br/>RUNBOOK section 2"] --> B{"Disconnected<br/>cluster?"}
+    B -- "Yes" --> C["oc-mirror the operator and Grafana image<br/>apply CatalogSource + IDMS"]
+    B -- "No" --> D
+    C --> D["Set the CHANGE_ME values"]
+    D --> E["oc apply -f 01-operator/<br/>approve InstallPlan"]
+    E --> F["oc create secret<br/>grafana-admin-credentials"]
+    F --> G["oc apply -f 02-grafana/"]
+    G --> H["oc apply -f 03-dashboards/"]
+    H --> I["Verify and log in<br/>RUNBOOK section 6"]
+
+    I --> J["Edit a dashboard in Grafana"]
+    J --> K["Export as JSON, Classic format"]
+    K --> L["Paste into 03-dashboards file,<br/>oc apply, git commit"]
+    L -. "operator resyncs" .-> I
+```
 
 **Step 1: operator**
 

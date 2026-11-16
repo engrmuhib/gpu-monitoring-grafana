@@ -9,6 +9,47 @@ Grafana dashboards for NVIDIA GPU fleets on OpenShift, deployed with the Grafana
 | **GPU Utilisation by Application (MIG-aware)** | Chargeback: usage per namespace and pod in GPU-equivalents, weighted by MIG slice size |
 | **GPU XID Errors** | GPUs reporting XID faults |
 
+## How it works
+
+```mermaid
+flowchart LR
+    subgraph NODES["GPU worker nodes"]
+        GPU["NVIDIA GPUs<br/>whole cards or MIG slices"]
+        DCGM["DCGM exporter<br/>DaemonSet, port 9400"]
+        GPU --> DCGM
+    end
+
+    subgraph MON["openshift-monitoring"]
+        PROM["Prometheus<br/>scrapes via ServiceMonitor"]
+        KSM["kube-state-metrics<br/>node labels, allocatable"]
+        THANOS["Thanos Querier<br/>port 9091"]
+        KSM --> PROM
+        PROM --> THANOS
+    end
+
+    subgraph NS["gpu-monitoring namespace"]
+        OP["Grafana Operator"]
+        CRS["Grafana, GrafanaDatasource,<br/>GrafanaDashboard resources"]
+        SA["ServiceAccount grafana-thanos-reader<br/>cluster-monitoring-view + token"]
+        ADMIN["Secret grafana-admin-credentials"]
+        GRAF["Grafana<br/>PVC + Route"]
+        DASH["4 dashboards<br/>Fleet Summary, Fleet Telemetry,<br/>Utilisation by Application, XID Errors"]
+        CRS --> OP
+        ADMIN -. "API login" .-> OP
+        OP -- "deploys and configures" --> GRAF
+        GRAF --> DASH
+    end
+
+    DCGM -- "DCGM metrics" --> PROM
+    SA -. "bearer token" .-> GRAF
+    THANOS -- "PromQL over HTTPS" --> GRAF
+
+    REPO[("Git repo<br/>01-operator, 02-grafana,<br/>03-dashboards")] -- "oc apply -f" --> CRS
+    USERS(["Management, operators,<br/>application teams"]) -- "HTTPS Route" --> DASH
+```
+
+The DCGM exporter on each GPU node publishes GPU metrics, OpenShift's Prometheus scrapes them, and Grafana reads them through Thanos Querier with a read-only service account token. The Grafana Operator turns the YAML in this repo into a running Grafana with its datasource and dashboards, logging in to Grafana's API with the admin Secret.
+
 ## Install
 
 Fill in the values marked `CHANGE_ME` (storage class, route host, catalog source), then:
