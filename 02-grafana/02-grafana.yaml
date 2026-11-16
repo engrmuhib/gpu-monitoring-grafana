@@ -1,0 +1,98 @@
+# Grafana instance, admin credentials and persistent storage.
+#
+# The admin Secret (grafana-admin-credentials) is NOT in this folder on purpose,
+# so no password ends up in Git. Create it with the one-line command in
+# RUNBOOK.md, step 5, before applying this folder.
+#
+# Two settings here are required for the operator to work, not style choices:
+#
+#   disableDefaultAdminSecret: true
+#     Without it the operator generates its own admin Secret and that one wins,
+#     so the password in grafana-admin-credentials never takes effect.
+#
+#   env with secretKeyRef (not envFrom)
+#     The operator reads the admin credentials from these exact env entries so it
+#     can log in to the Grafana API and push dashboards. With envFrom you can log
+#     in through the UI, but the Grafana CR status shows
+#     "failed to authenticate with grafana" and no dashboards ever appear.
+#
+# Change before applying:
+#   - storageClassName
+#   - route host (or delete the host line to let OpenShift generate one)
+#   - image (disconnected clusters: your mirror registry, e.g. quay.ocp.lan:8443/grafana/grafana:13.0.1)
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: gpu-grafana-data
+  namespace: gpu-monitoring
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: CHANGE_ME_STORAGECLASS
+  resources:
+    requests:
+      storage: 5Gi
+---
+apiVersion: grafana.integreatly.org/v1beta1
+kind: Grafana
+metadata:
+  name: gpu-grafana
+  namespace: gpu-monitoring
+  labels:
+    dashboards: gpu-grafana        # datasource and dashboards select the instance by this label
+spec:
+  disableDefaultAdminSecret: true
+  config:
+    log:
+      mode: console
+      level: info
+    auth:
+      disable_login_form: "false"
+      disable_signout_menu: "true"
+    auth.anonymous:
+      enabled: "false"
+    users:
+      viewers_can_edit: "false"
+  deployment:
+    spec:
+      # RWO volume + one replica: RollingUpdate can hang waiting for a volume the
+      # old pod still holds. Recreate releases it first.
+      strategy:
+        type: Recreate
+      template:
+        spec:
+          containers:
+            - name: grafana
+              image: docker.io/grafana/grafana:13.0.1   # CHANGE_ME on disconnected clusters, e.g. quay.ocp.lan:8443/grafana/grafana:13.0.1
+              env:
+                - name: GF_SECURITY_ADMIN_USER
+                  valueFrom:
+                    secretKeyRef:
+                      name: grafana-admin-credentials
+                      key: GF_SECURITY_ADMIN_USER
+                - name: GF_SECURITY_ADMIN_PASSWORD
+                  valueFrom:
+                    secretKeyRef:
+                      name: grafana-admin-credentials
+                      key: GF_SECURITY_ADMIN_PASSWORD
+              volumeMounts:
+                - name: grafana-data
+                  mountPath: /var/lib/grafana
+              resources:
+                requests:
+                  cpu: 100m
+                  memory: 256Mi
+                limits:
+                  cpu: 500m
+                  memory: 1Gi
+          volumes:
+            - name: grafana-data
+              persistentVolumeClaim:
+                claimName: gpu-grafana-data
+  route:
+    spec:
+      host: gpu-monitoring.apps.ocp.lan          # CHANGE_ME: your apps domain
+      tls:
+        termination: edge
+        insecureEdgeTerminationPolicy: Redirect

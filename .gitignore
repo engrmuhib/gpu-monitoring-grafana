@@ -1,0 +1,10 @@
+# Never commit credentials
+*admin-credentials*
+*.secret.yaml
+.env
+
+# oc-mirror workspaces
+working-dir/
+oc-mirror-workspace/
+
+.DS_Store

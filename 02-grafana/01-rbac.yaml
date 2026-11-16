@@ -1,0 +1,36 @@
+# Service account Grafana uses to query Thanos Querier.
+#
+# cluster-monitoring-view lets it read metrics from every namespace. Without it,
+# Thanos returns 403 and every panel is empty.
+#
+# OpenShift 4.11+ (Kubernetes 1.24+) no longer auto-creates token Secrets for
+# service accounts, so the token Secret is declared explicitly. The datasource
+# reads the token from it.
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: grafana-thanos-reader
+  namespace: gpu-monitoring
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: grafana-thanos-reader-token
+  namespace: gpu-monitoring
+  annotations:
+    kubernetes.io/service-account.name: grafana-thanos-reader
+type: kubernetes.io/service-account-token
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: grafana-thanos-reader-monitoring-view
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: cluster-monitoring-view
+subjects:
+  - kind: ServiceAccount
+    name: grafana-thanos-reader
+    namespace: gpu-monitoring

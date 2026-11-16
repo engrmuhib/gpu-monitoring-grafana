@@ -1,0 +1,2253 @@
+apiVersion: grafana.integreatly.org/v1beta1
+kind: GrafanaDashboard
+metadata:
+  name: gpu-fleet-summary
+  namespace: gpu-monitoring
+spec:
+  allowCrossNamespaceImport: false
+  resyncPeriod: 5m
+  instanceSelector:
+    matchLabels:
+      dashboards: gpu-grafana
+  datasources:
+    - inputName: DS_PROMETHEUS
+      datasourceName: Thanos
+  json: |
+    {
+      "id": null,
+      "uid": "gpu-fleet-summary",
+      "title": "GPU Fleet Summary",
+      "schemaVersion": 39,
+      "version": 1,
+      "editable": true,
+      "tags": [
+        "gpu",
+        "summary",
+        "management"
+      ],
+      "timezone": "browser",
+      "time": {
+        "from": "now-3h",
+        "to": "now"
+      },
+      "refresh": "1m",
+      "timepicker": {
+        "refresh_intervals": [
+          "5s",
+          "10s",
+          "30s",
+          "1m",
+          "5m",
+          "15m",
+          "30m",
+          "1h",
+          "2h",
+          "1d"
+        ],
+        "hidden": false
+      },
+      "graphTooltip": 0,
+      "links": [],
+      "templating": {
+        "list": []
+      },
+      "__inputs": [
+        {
+          "name": "DS_PROMETHEUS",
+          "label": "Thanos",
+          "type": "datasource",
+          "pluginId": "prometheus",
+          "pluginName": "Prometheus"
+        }
+      ],
+      "annotations": {
+        "list": [
+          {
+            "builtIn": true,
+            "enable": true,
+            "hide": true,
+            "iconColor": "rgba(0, 211, 255, 1)",
+            "name": "Annotations & Alerts",
+            "datasource": {
+              "type": "grafana",
+              "uid": "-- Grafana --"
+            },
+            "type": "dashboard"
+          },
+          {
+            "builtIn": true,
+            "enable": true,
+            "hide": true,
+            "iconColor": "rgba(0, 211, 255, 1)",
+            "name": "Annotations & Alerts",
+            "datasource": {
+              "type": "grafana",
+              "uid": "-- Grafana --"
+            },
+            "type": "dashboard"
+          }
+        ]
+      },
+      "panels": [
+        {
+          "id": 3,
+          "title": "Total GPUs Installed",
+          "description": "Counted by distinct UUID, so MIG instances on the same card aren't double counted.",
+          "type": "stat",
+          "pluginVersion": "13.0.1",
+          "datasource": "${DS_PROMETHEUS}",
+          "gridPos": {
+            "x": 0,
+            "y": 0,
+            "w": 5,
+            "h": 6
+          },
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "fixedColor": "text",
+                "mode": "fixed"
+              },
+              "decimals": 0,
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": 0
+                  },
+                  {
+                    "color": "red",
+                    "value": 80
+                  }
+                ]
+              },
+              "unit": "none"
+            },
+            "overrides": []
+          },
+          "options": {
+            "colorMode": "none",
+            "graphMode": "none",
+            "justifyMode": "center",
+            "orientation": "auto",
+            "percentChangeColorMode": "standard",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "showPercentChange": false,
+            "textMode": "auto",
+            "wideLayout": true
+          },
+          "links": [
+            {
+              "targetBlank": false,
+              "title": "See advertised vs physical, by node",
+              "url": "/d/gpu-fleet-telemetry?viewPanel=22&${__all_variables}&from=${__from}&to=${__to}"
+            }
+          ],
+          "targets": [
+            {
+              "expr": "count(count by (UUID) (DCGM_FI_DEV_FB_USED))",
+              "instant": true,
+              "refId": "A",
+              "hide": false,
+              "datasource": "${DS_PROMETHEUS}"
+            }
+          ],
+          "transformations": []
+        },
+        {
+          "id": 9,
+          "title": "Total GPUs (Non-Sliced)",
+          "description": "Non-MIG GPU devices represented in exporter telemetry, allocated and unallocated. Physical MIG parent cards are excluded.",
+          "type": "stat",
+          "pluginVersion": "13.0.1",
+          "datasource": "${DS_PROMETHEUS}",
+          "gridPos": {
+            "x": 5,
+            "y": 0,
+            "w": 4,
+            "h": 6
+          },
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "fixedColor": "purple",
+                "mode": "fixed"
+              },
+              "decimals": 0,
+              "noValue": "No data",
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": 0
+                  },
+                  {
+                    "color": "red",
+                    "value": 80
+                  }
+                ]
+              },
+              "unit": "none"
+            },
+            "overrides": []
+          },
+          "options": {
+            "colorMode": "value",
+            "graphMode": "none",
+            "justifyMode": "center",
+            "orientation": "auto",
+            "percentChangeColorMode": "standard",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "showPercentChange": false,
+            "textMode": "auto",
+            "wideLayout": true
+          },
+          "links": [
+            {
+              "targetBlank": false,
+              "title": "See allocation by server",
+              "url": "/d/gpu-fleet-summary?viewPanel=17&from=${__from}&to=${__to}"
+            }
+          ],
+          "targets": [
+            {
+              "expr": "count(count by (Hostname, UUID) (DCGM_FI_DEV_FB_USED{GPU_I_PROFILE=\"\"})) or (count(count by (Hostname, UUID, GPU_I_ID) (DCGM_FI_DEV_FB_USED)) * 0)",
+              "instant": true,
+              "range": false,
+              "refId": "A",
+              "hide": false,
+              "datasource": "${DS_PROMETHEUS}"
+            }
+          ],
+          "transformations": []
+        },
+        {
+          "id": 19,
+          "title": "Total Slices",
+          "description": "Configured MIG GPU instances represented in exporter telemetry, allocated and unallocated. Includes 7g instances.",
+          "type": "stat",
+          "pluginVersion": "13.0.1",
+          "datasource": "${DS_PROMETHEUS}",
+          "gridPos": {
+            "x": 9,
+            "y": 0,
+            "w": 4,
+            "h": 6
+          },
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "fixedColor": "purple",
+                "mode": "fixed"
+              },
+              "decimals": 0,
+              "noValue": "No data",
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": 0
+                  },
+                  {
+                    "color": "red",
+                    "value": 80
+                  }
+                ]
+              },
+              "unit": "none"
+            },
+            "overrides": []
+          },
+          "options": {
+            "colorMode": "value",
+            "graphMode": "none",
+            "justifyMode": "center",
+            "orientation": "auto",
+            "percentChangeColorMode": "standard",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "showPercentChange": false,
+            "textMode": "auto",
+            "wideLayout": true
+          },
+          "links": [
+            {
+              "targetBlank": false,
+              "title": "See allocation by server",
+              "url": "/d/gpu-fleet-summary?viewPanel=17&from=${__from}&to=${__to}"
+            }
+          ],
+          "targets": [
+            {
+              "expr": "count(count by (Hostname, UUID, GPU_I_ID) (DCGM_FI_DEV_FB_USED{GPU_I_PROFILE!=\"\"})) or (count(count by (Hostname, UUID, GPU_I_ID) (DCGM_FI_DEV_FB_USED)) * 0)",
+              "instant": true,
+              "range": false,
+              "refId": "A",
+              "hide": false,
+              "datasource": "${DS_PROMETHEUS}"
+            }
+          ],
+          "transformations": []
+        },
+        {
+          "id": 5,
+          "title": "Total GPU Memory",
+          "description": "Total framebuffer capacity across the fleet, used and free combined.",
+          "type": "stat",
+          "pluginVersion": "13.0.1",
+          "datasource": "${DS_PROMETHEUS}",
+          "gridPos": {
+            "x": 13,
+            "y": 0,
+            "w": 5,
+            "h": 6
+          },
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "fixedColor": "blue",
+                "mode": "fixed"
+              },
+              "decimals": 1,
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": 0
+                  },
+                  {
+                    "color": "red",
+                    "value": 80
+                  }
+                ]
+              },
+              "unit": "bytes"
+            },
+            "overrides": []
+          },
+          "options": {
+            "colorMode": "value",
+            "graphMode": "area",
+            "justifyMode": "center",
+            "orientation": "auto",
+            "percentChangeColorMode": "standard",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "showPercentChange": false,
+            "textMode": "auto",
+            "wideLayout": true
+          },
+          "links": [
+            {
+              "targetBlank": false,
+              "title": "See total installed memory by node",
+              "url": "/d/gpu-fleet-telemetry?viewPanel=28&${__all_variables}&from=${__from}&to=${__to}"
+            }
+          ],
+          "targets": [
+            {
+              "expr": "sum(DCGM_FI_DEV_FB_USED + DCGM_FI_DEV_FB_FREE) * 1024 * 1024",
+              "instant": true,
+              "refId": "A",
+              "hide": false,
+              "datasource": "${DS_PROMETHEUS}"
+            }
+          ],
+          "transformations": []
+        },
+        {
+          "id": 13,
+          "title": "Current GPU Memory Usage",
+          "description": "Current value behind the GPU memory in use chart beside it.",
+          "type": "stat",
+          "pluginVersion": "13.0.1",
+          "datasource": "${DS_PROMETHEUS}",
+          "gridPos": {
+            "x": 18,
+            "y": 0,
+            "w": 6,
+            "h": 6
+          },
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "fixedColor": "blue",
+                "mode": "fixed"
+              },
+              "decimals": 1,
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": 0
+                  },
+                  {
+                    "color": "red",
+                    "value": 80
+                  }
+                ]
+              },
+              "unit": "bytes"
+            },
+            "overrides": []
+          },
+          "options": {
+            "colorMode": "value",
+            "graphMode": "none",
+            "justifyMode": "center",
+            "orientation": "auto",
+            "percentChangeColorMode": "standard",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "showPercentChange": false,
+            "textMode": "auto",
+            "wideLayout": true
+          },
+          "links": [
+            {
+              "targetBlank": false,
+              "title": "See memory use by workload",
+              "url": "/d/gpu-by-app?viewPanel=11&${__all_variables}&from=${__from}&to=${__to}"
+            }
+          ],
+          "targets": [
+            {
+              "expr": "sum(DCGM_FI_DEV_FB_USED) * 1024 * 1024",
+              "instant": true,
+              "refId": "A",
+              "hide": false,
+              "datasource": "${DS_PROMETHEUS}"
+            }
+          ],
+          "transformations": []
+        },
+        {
+          "id": 11,
+          "title": "Current GPUs Usage",
+          "description": "Current value behind the GPU-equivalents in use chart beside it.",
+          "type": "stat",
+          "pluginVersion": "13.0.1",
+          "datasource": "${DS_PROMETHEUS}",
+          "gridPos": {
+            "x": 0,
+            "y": 6,
+            "w": 5,
+            "h": 7
+          },
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "fixedColor": "green",
+                "mode": "fixed"
+              },
+              "decimals": 2,
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": 0
+                  },
+                  {
+                    "color": "red",
+                    "value": 80
+                  }
+                ]
+              },
+              "unit": "none"
+            },
+            "overrides": []
+          },
+          "options": {
+            "colorMode": "value",
+            "graphMode": "none",
+            "justifyMode": "center",
+            "orientation": "auto",
+            "percentChangeColorMode": "standard",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "showPercentChange": false,
+            "textMode": "auto",
+            "wideLayout": true
+          },
+          "links": [
+            {
+              "targetBlank": false,
+              "title": "See full per-application detail",
+              "url": "/d/gpu-by-app?viewPanel=20&${__all_variables}&from=${__from}&to=${__to}"
+            }
+          ],
+          "targets": [
+            {
+              "expr": "sum (\n  DCGM_FI_PROF_GR_ENGINE_ACTIVE{GPU_I_PROFILE=~\"1g.*\"} * 1/7\n  or DCGM_FI_PROF_GR_ENGINE_ACTIVE{GPU_I_PROFILE=~\"2g.*\"} * 2/7\n  or DCGM_FI_PROF_GR_ENGINE_ACTIVE{GPU_I_PROFILE=~\"3g.*\"} * 3/7\n  or DCGM_FI_PROF_GR_ENGINE_ACTIVE{GPU_I_PROFILE=~\"4g.*\"} * 4/7\n  or DCGM_FI_PROF_GR_ENGINE_ACTIVE{GPU_I_PROFILE=~\"7g.*\"} * 7/7\n  or DCGM_FI_PROF_GR_ENGINE_ACTIVE{GPU_I_PROFILE=\"\"}\n)",
+              "instant": true,
+              "refId": "A",
+              "hide": false,
+              "datasource": "${DS_PROMETHEUS}"
+            }
+          ],
+          "transformations": []
+        },
+        {
+          "id": 4,
+          "title": "Total Allocated GPUs (Non-Sliced)",
+          "description": "Distinct non-MIG GPUs assigned to workloads, not engine activity. Missing telemetry stays No data. A 7g MIG instance counts as a slice.",
+          "type": "stat",
+          "pluginVersion": "13.0.1",
+          "datasource": "${DS_PROMETHEUS}",
+          "gridPos": {
+            "x": 5,
+            "y": 6,
+            "w": 4,
+            "h": 7
+          },
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "fixedColor": "purple",
+                "mode": "fixed"
+              },
+              "decimals": 0,
+              "noValue": "No data",
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": 0
+                  },
+                  {
+                    "color": "red",
+                    "value": 80
+                  }
+                ]
+              },
+              "unit": "none"
+            },
+            "overrides": []
+          },
+          "options": {
+            "colorMode": "value",
+            "graphMode": "none",
+            "justifyMode": "center",
+            "orientation": "auto",
+            "percentChangeColorMode": "standard",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "showPercentChange": false,
+            "textMode": "auto",
+            "wideLayout": true
+          },
+          "links": [
+            {
+              "targetBlank": false,
+              "title": "See allocation by server",
+              "url": "/d/gpu-fleet-summary?viewPanel=17&from=${__from}&to=${__to}"
+            }
+          ],
+          "targets": [
+            {
+              "expr": "count(count by (Hostname, UUID) (DCGM_FI_DEV_FB_USED{GPU_I_PROFILE=\"\",exported_pod!=\"\"})) or (count(count by (Hostname, UUID, GPU_I_ID) (DCGM_FI_DEV_FB_USED)) * 0)",
+              "instant": true,
+              "range": false,
+              "refId": "A",
+              "hide": false,
+              "datasource": "${DS_PROMETHEUS}"
+            }
+          ],
+          "transformations": []
+        },
+        {
+          "id": 18,
+          "title": "Total Allocated Slices",
+          "description": "Distinct MIG GPU instances assigned to workloads. Includes 7g instances; does not count physical parent cards.",
+          "type": "stat",
+          "pluginVersion": "13.0.1",
+          "datasource": "${DS_PROMETHEUS}",
+          "gridPos": {
+            "x": 9,
+            "y": 6,
+            "w": 4,
+            "h": 7
+          },
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "fixedColor": "purple",
+                "mode": "fixed"
+              },
+              "decimals": 0,
+              "noValue": "No data",
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": 0
+                  },
+                  {
+                    "color": "red",
+                    "value": 80
+                  }
+                ]
+              },
+              "unit": "none"
+            },
+            "overrides": []
+          },
+          "options": {
+            "colorMode": "value",
+            "graphMode": "none",
+            "justifyMode": "center",
+            "orientation": "auto",
+            "percentChangeColorMode": "standard",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "showPercentChange": false,
+            "textMode": "auto",
+            "wideLayout": true
+          },
+          "links": [
+            {
+              "targetBlank": false,
+              "title": "See allocation by server",
+              "url": "/d/gpu-fleet-summary?viewPanel=17&from=${__from}&to=${__to}"
+            }
+          ],
+          "targets": [
+            {
+              "expr": "count(count by (Hostname, UUID, GPU_I_ID) (DCGM_FI_DEV_FB_USED{GPU_I_PROFILE!=\"\",exported_pod!=\"\"})) or (count(count by (Hostname, UUID, GPU_I_ID) (DCGM_FI_DEV_FB_USED)) * 0)",
+              "instant": true,
+              "range": false,
+              "refId": "A",
+              "hide": false,
+              "datasource": "${DS_PROMETHEUS}"
+            }
+          ],
+          "transformations": []
+        },
+        {
+          "id": 22,
+          "title": "Free GPUs (Non-Sliced)",
+          "description": "Exported devices without a workload allocation, deduplicated by device identity. Free means unallocated, not idle or guaranteed schedulable. MIG 7g instances count as slices. Missing telemetry stays No data.",
+          "type": "stat",
+          "pluginVersion": "13.0.1",
+          "datasource": "${DS_PROMETHEUS}",
+          "gridPos": {
+            "x": 13,
+            "y": 6,
+            "w": 5,
+            "h": 7
+          },
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "fixedColor": "green",
+                "mode": "fixed"
+              },
+              "decimals": 0,
+              "noValue": "No data",
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": 0
+                  },
+                  {
+                    "color": "red",
+                    "value": 80
+                  }
+                ]
+              },
+              "unit": "none"
+            },
+            "overrides": []
+          },
+          "options": {
+            "colorMode": "value",
+            "graphMode": "none",
+            "justifyMode": "center",
+            "orientation": "auto",
+            "percentChangeColorMode": "standard",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "showPercentChange": false,
+            "textMode": "auto",
+            "wideLayout": true
+          },
+          "links": [
+            {
+              "targetBlank": false,
+              "title": "See allocation by server",
+              "url": "/d/gpu-fleet-summary?viewPanel=17&from=${__from}&to=${__to}"
+            }
+          ],
+          "targets": [
+            {
+              "expr": "count(count by (Hostname, UUID) (DCGM_FI_DEV_FB_USED{GPU_I_PROFILE=\"\"}) unless on (Hostname, UUID) count by (Hostname, UUID) (DCGM_FI_DEV_FB_USED{GPU_I_PROFILE=\"\",exported_pod!=\"\"})) or (count(count by (Hostname, UUID, GPU_I_ID) (DCGM_FI_DEV_FB_USED)) * 0)",
+              "instant": true,
+              "range": false,
+              "refId": "A",
+              "hide": false,
+              "datasource": "${DS_PROMETHEUS}"
+            }
+          ],
+          "transformations": []
+        },
+        {
+          "id": 23,
+          "title": "Free GPU Slices",
+          "description": "Exported devices without a workload allocation, deduplicated by device identity. Free means unallocated, not idle or guaranteed schedulable. MIG 7g instances count as slices. Missing telemetry stays No data.",
+          "type": "stat",
+          "pluginVersion": "13.0.1",
+          "datasource": "${DS_PROMETHEUS}",
+          "gridPos": {
+            "x": 18,
+            "y": 6,
+            "w": 6,
+            "h": 7
+          },
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "fixedColor": "green",
+                "mode": "fixed"
+              },
+              "decimals": 0,
+              "noValue": "No data",
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": 0
+                  },
+                  {
+                    "color": "red",
+                    "value": 80
+                  }
+                ]
+              },
+              "unit": "none"
+            },
+            "overrides": []
+          },
+          "options": {
+            "colorMode": "value",
+            "graphMode": "none",
+            "justifyMode": "center",
+            "orientation": "auto",
+            "percentChangeColorMode": "standard",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "showPercentChange": false,
+            "textMode": "auto",
+            "wideLayout": true
+          },
+          "links": [
+            {
+              "targetBlank": false,
+              "title": "See allocation by server",
+              "url": "/d/gpu-fleet-summary?viewPanel=17&from=${__from}&to=${__to}"
+            }
+          ],
+          "targets": [
+            {
+              "expr": "count(count by (Hostname, UUID, GPU_I_ID) (DCGM_FI_DEV_FB_USED{GPU_I_PROFILE!=\"\"}) unless on (Hostname, UUID, GPU_I_ID) count by (Hostname, UUID, GPU_I_ID) (DCGM_FI_DEV_FB_USED{GPU_I_PROFILE!=\"\",exported_pod!=\"\"})) or (count(count by (Hostname, UUID, GPU_I_ID) (DCGM_FI_DEV_FB_USED)) * 0)",
+              "instant": true,
+              "range": false,
+              "refId": "A",
+              "hide": false,
+              "datasource": "${DS_PROMETHEUS}"
+            }
+          ],
+          "transformations": []
+        },
+        {
+          "id": 12,
+          "title": "Current GPU Usage (Percent)",
+          "description": "Current value behind the Fleet utilisation (percent) chart beside it.",
+          "type": "stat",
+          "pluginVersion": "13.0.1",
+          "datasource": "${DS_PROMETHEUS}",
+          "gridPos": {
+            "x": 0,
+            "y": 13,
+            "w": 5,
+            "h": 8
+          },
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "fixedColor": "green",
+                "mode": "fixed"
+              },
+              "decimals": 1,
+              "max": 1,
+              "min": 0,
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": 0
+                  },
+                  {
+                    "color": "red",
+                    "value": 80
+                  }
+                ]
+              },
+              "unit": "percentunit"
+            },
+            "overrides": []
+          },
+          "options": {
+            "colorMode": "value",
+            "graphMode": "none",
+            "justifyMode": "center",
+            "orientation": "auto",
+            "percentChangeColorMode": "standard",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "showPercentChange": false,
+            "textMode": "auto",
+            "wideLayout": true
+          },
+          "links": [
+            {
+              "targetBlank": false,
+              "title": "See full per-application detail",
+              "url": "/d/gpu-by-app?viewPanel=20&${__all_variables}&from=${__from}&to=${__to}"
+            }
+          ],
+          "targets": [
+            {
+              "expr": "(sum (\n  DCGM_FI_PROF_GR_ENGINE_ACTIVE{GPU_I_PROFILE=~\"1g.*\"} * 1/7\n  or DCGM_FI_PROF_GR_ENGINE_ACTIVE{GPU_I_PROFILE=~\"2g.*\"} * 2/7\n  or DCGM_FI_PROF_GR_ENGINE_ACTIVE{GPU_I_PROFILE=~\"3g.*\"} * 3/7\n  or DCGM_FI_PROF_GR_ENGINE_ACTIVE{GPU_I_PROFILE=~\"4g.*\"} * 4/7\n  or DCGM_FI_PROF_GR_ENGINE_ACTIVE{GPU_I_PROFILE=~\"7g.*\"} * 7/7\n  or DCGM_FI_PROF_GR_ENGINE_ACTIVE{GPU_I_PROFILE=\"\"}\n)) / (count(count by (UUID) (DCGM_FI_DEV_FB_USED)))",
+              "instant": true,
+              "refId": "A",
+              "hide": false,
+              "datasource": "${DS_PROMETHEUS}"
+            }
+          ],
+          "transformations": []
+        },
+        {
+          "id": 2,
+          "title": "GPUs Usage Over Time (Percent)",
+          "description": "GPU-equivalents in use divided by physical GPU count.",
+          "type": "barchart",
+          "pluginVersion": "13.0.1",
+          "datasource": "${DS_PROMETHEUS}",
+          "gridPos": {
+            "x": 5,
+            "y": 13,
+            "w": 8,
+            "h": 8
+          },
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "thresholds"
+              },
+              "custom": {
+                "axisBorderShow": false,
+                "axisCenteredZero": false,
+                "axisColorMode": "text",
+                "axisLabel": "",
+                "axisPlacement": "auto",
+                "fillOpacity": 80,
+                "gradientMode": "none",
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "lineWidth": 1,
+                "scaleDistribution": {
+                  "type": "linear"
+                },
+                "thresholdsStyle": {
+                  "mode": "off"
+                }
+              },
+              "decimals": 2,
+              "max": 1,
+              "min": 0,
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "blue",
+                    "value": 0
+                  },
+                  {
+                    "color": "green",
+                    "value": 0.4
+                  },
+                  {
+                    "color": "orange",
+                    "value": 0.85
+                  }
+                ]
+              },
+              "unit": "percentunit"
+            },
+            "overrides": []
+          },
+          "options": {
+            "barRadius": 0,
+            "barWidth": 0.97,
+            "colorMode": "value",
+            "fullHighlight": false,
+            "graphMode": "area",
+            "groupWidth": 0.7,
+            "justifyMode": "center",
+            "legend": {
+              "calcs": [],
+              "displayMode": "list",
+              "placement": "bottom",
+              "showLegend": true
+            },
+            "orientation": "auto",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "showValue": "auto",
+            "stacking": "none",
+            "textMode": "auto",
+            "tooltip": {
+              "hideZeros": false,
+              "mode": "single",
+              "sort": "none"
+            },
+            "xTickLabelRotation": 0,
+            "xTickLabelSpacing": 0
+          },
+          "links": [
+            {
+              "targetBlank": false,
+              "title": "See full per-application detail",
+              "url": "/d/gpu-by-app?viewPanel=20&${__all_variables}&from=${__from}&to=${__to}"
+            }
+          ],
+          "targets": [
+            {
+              "expr": "(sum (\n  DCGM_FI_PROF_GR_ENGINE_ACTIVE{GPU_I_PROFILE=~\"1g.*\"} * 1/7\n  or DCGM_FI_PROF_GR_ENGINE_ACTIVE{GPU_I_PROFILE=~\"2g.*\"} * 2/7\n  or DCGM_FI_PROF_GR_ENGINE_ACTIVE{GPU_I_PROFILE=~\"3g.*\"} * 3/7\n  or DCGM_FI_PROF_GR_ENGINE_ACTIVE{GPU_I_PROFILE=~\"4g.*\"} * 4/7\n  or DCGM_FI_PROF_GR_ENGINE_ACTIVE{GPU_I_PROFILE=~\"7g.*\"} * 7/7\n  or DCGM_FI_PROF_GR_ENGINE_ACTIVE{GPU_I_PROFILE=\"\"}\n)) / (count(count by (UUID) (DCGM_FI_DEV_FB_USED)))",
+              "instant": false,
+              "legendFormat": "In use",
+              "range": true,
+              "refId": "A",
+              "hide": false,
+              "datasource": "${DS_PROMETHEUS}"
+            }
+          ],
+          "transformations": []
+        },
+        {
+          "id": 7,
+          "title": "Memory Usage Over Time (Percent)",
+          "description": "GPU memory in use as a percentage of Total GPU memory.",
+          "type": "barchart",
+          "pluginVersion": "13.0.1",
+          "datasource": "${DS_PROMETHEUS}",
+          "gridPos": {
+            "x": 13,
+            "y": 13,
+            "w": 7,
+            "h": 8
+          },
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "thresholds"
+              },
+              "custom": {
+                "axisBorderShow": false,
+                "axisCenteredZero": false,
+                "axisColorMode": "text",
+                "axisLabel": "",
+                "axisPlacement": "auto",
+                "fillOpacity": 80,
+                "gradientMode": "none",
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "lineWidth": 1,
+                "scaleDistribution": {
+                  "type": "linear"
+                },
+                "thresholdsStyle": {
+                  "mode": "off"
+                }
+              },
+              "decimals": 1,
+              "max": 1,
+              "min": 0,
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": 0
+                  },
+                  {
+                    "color": "orange",
+                    "value": 0.7
+                  },
+                  {
+                    "color": "red",
+                    "value": 0.9
+                  }
+                ]
+              },
+              "unit": "percentunit"
+            },
+            "overrides": []
+          },
+          "options": {
+            "barRadius": 0,
+            "barWidth": 0.97,
+            "colorMode": "value",
+            "fullHighlight": false,
+            "graphMode": "area",
+            "groupWidth": 0.7,
+            "justifyMode": "center",
+            "legend": {
+              "calcs": [],
+              "displayMode": "list",
+              "placement": "bottom",
+              "showLegend": true
+            },
+            "orientation": "auto",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "showValue": "auto",
+            "stacking": "none",
+            "textMode": "auto",
+            "tooltip": {
+              "hideZeros": false,
+              "mode": "single",
+              "sort": "none"
+            },
+            "xTickLabelRotation": 0,
+            "xTickLabelSpacing": 0
+          },
+          "links": [
+            {
+              "targetBlank": false,
+              "title": "See memory use (percent) by application",
+              "url": "/d/gpu-by-app?viewPanel=33&${__all_variables}&from=${__from}&to=${__to}"
+            }
+          ],
+          "targets": [
+            {
+              "expr": "sum(DCGM_FI_DEV_FB_USED) / sum(DCGM_FI_DEV_FB_USED + DCGM_FI_DEV_FB_FREE)",
+              "instant": false,
+              "legendFormat": "Memory used %",
+              "range": true,
+              "refId": "A",
+              "hide": false,
+              "datasource": "${DS_PROMETHEUS}"
+            }
+          ],
+          "transformations": []
+        },
+        {
+          "id": 15,
+          "title": "Total GPU Errors",
+          "description": "Physical GPUs whose latest exported XID code is nonzero, deduplicated across MIG instances. This is an affected-GPU count, not an event count. A latched code may reflect an earlier error. Missing XID telemetry shows No data.",
+          "type": "stat",
+          "pluginVersion": "13.0.1",
+          "datasource": "${DS_PROMETHEUS}",
+          "gridPos": {
+            "x": 20,
+            "y": 13,
+            "w": 4,
+            "h": 8
+          },
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "thresholds"
+              },
+              "decimals": 0,
+              "noValue": "No data",
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": 0
+                  },
+                  {
+                    "color": "red",
+                    "value": 1
+                  }
+                ]
+              },
+              "unit": "none"
+            },
+            "overrides": []
+          },
+          "options": {
+            "colorMode": "background",
+            "graphMode": "none",
+            "justifyMode": "center",
+            "orientation": "auto",
+            "percentChangeColorMode": "standard",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "showPercentChange": false,
+            "textMode": "auto",
+            "wideLayout": true
+          },
+          "links": [
+            {
+              "title": "See only GPUs reporting XID errors",
+              "url": "/d/gpu-xid-errors?from=${__from}&to=${__to}",
+              "targetBlank": false
+            }
+          ],
+          "targets": [
+            {
+              "expr": "sum(increase(gpu_xid_events_total[$__range]))",
+              "instant": true,
+              "range": false,
+              "refId": "A",
+              "hide": false,
+              "datasource": "${DS_PROMETHEUS}"
+            }
+          ],
+          "transformations": []
+        },
+        {
+          "id": 14,
+          "title": "Current Memory Usage (Percent)",
+          "description": "Current value behind the GPU memory in use (percent) chart beside it.",
+          "type": "stat",
+          "pluginVersion": "13.0.1",
+          "datasource": "${DS_PROMETHEUS}",
+          "gridPos": {
+            "x": 0,
+            "y": 21,
+            "w": 5,
+            "h": 8
+          },
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "fixedColor": "blue",
+                "mode": "fixed"
+              },
+              "decimals": 1,
+              "max": 1,
+              "min": 0,
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": 0
+                  },
+                  {
+                    "color": "red",
+                    "value": 80
+                  }
+                ]
+              },
+              "unit": "percentunit"
+            },
+            "overrides": []
+          },
+          "options": {
+            "colorMode": "value",
+            "graphMode": "none",
+            "justifyMode": "center",
+            "orientation": "auto",
+            "percentChangeColorMode": "standard",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "showPercentChange": false,
+            "textMode": "auto",
+            "wideLayout": true
+          },
+          "links": [
+            {
+              "targetBlank": false,
+              "title": "See memory use (percent) by application",
+              "url": "/d/gpu-by-app?viewPanel=33&${__all_variables}&from=${__from}&to=${__to}"
+            }
+          ],
+          "targets": [
+            {
+              "expr": "sum(DCGM_FI_DEV_FB_USED) / sum(DCGM_FI_DEV_FB_USED + DCGM_FI_DEV_FB_FREE)",
+              "instant": true,
+              "refId": "A",
+              "hide": false,
+              "datasource": "${DS_PROMETHEUS}"
+            }
+          ],
+          "transformations": []
+        },
+        {
+          "id": 1,
+          "title": "GPU Usage Over Time",
+          "description": "MIG slice activity weighted to whole GPUs by compute slices out of 7: a 1g instance at 100% counts as 0.14 GPUs, a 3g instance as 0.43, a 7g instance or a non-MIG GPU as 1. Same query as gpu-utilisation-by-application's identically named panel.",
+          "type": "barchart",
+          "pluginVersion": "13.0.1",
+          "datasource": "${DS_PROMETHEUS}",
+          "gridPos": {
+            "x": 5,
+            "y": 21,
+            "w": 8,
+            "h": 8
+          },
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "thresholds"
+              },
+              "custom": {
+                "axisBorderShow": false,
+                "axisCenteredZero": false,
+                "axisColorMode": "text",
+                "axisLabel": "",
+                "axisPlacement": "auto",
+                "fillOpacity": 80,
+                "gradientMode": "none",
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "lineWidth": 1,
+                "scaleDistribution": {
+                  "type": "linear"
+                },
+                "thresholdsStyle": {
+                  "mode": "off"
+                }
+              },
+              "decimals": 2,
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "blue",
+                    "value": 0
+                  },
+                  {
+                    "color": "green",
+                    "value": 1
+                  }
+                ]
+              },
+              "unit": "none"
+            },
+            "overrides": []
+          },
+          "options": {
+            "barRadius": 0,
+            "barWidth": 0.97,
+            "colorMode": "value",
+            "fullHighlight": false,
+            "graphMode": "area",
+            "groupWidth": 0.7,
+            "justifyMode": "center",
+            "legend": {
+              "calcs": [],
+              "displayMode": "list",
+              "placement": "bottom",
+              "showLegend": true
+            },
+            "orientation": "auto",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "showValue": "auto",
+            "stacking": "none",
+            "textMode": "auto",
+            "tooltip": {
+              "hideZeros": false,
+              "mode": "single",
+              "sort": "none"
+            },
+            "xTickLabelRotation": 0,
+            "xTickLabelSpacing": 0
+          },
+          "links": [
+            {
+              "targetBlank": false,
+              "title": "See full per-application detail",
+              "url": "/d/gpu-by-app?viewPanel=20&${__all_variables}&from=${__from}&to=${__to}"
+            }
+          ],
+          "targets": [
+            {
+              "expr": "sum (\n  DCGM_FI_PROF_GR_ENGINE_ACTIVE{GPU_I_PROFILE=~\"1g.*\"} * 1/7\n  or DCGM_FI_PROF_GR_ENGINE_ACTIVE{GPU_I_PROFILE=~\"2g.*\"} * 2/7\n  or DCGM_FI_PROF_GR_ENGINE_ACTIVE{GPU_I_PROFILE=~\"3g.*\"} * 3/7\n  or DCGM_FI_PROF_GR_ENGINE_ACTIVE{GPU_I_PROFILE=~\"4g.*\"} * 4/7\n  or DCGM_FI_PROF_GR_ENGINE_ACTIVE{GPU_I_PROFILE=~\"7g.*\"} * 7/7\n  or DCGM_FI_PROF_GR_ENGINE_ACTIVE{GPU_I_PROFILE=\"\"}\n)",
+              "instant": false,
+              "legendFormat": "GPUs in use",
+              "range": true,
+              "refId": "A",
+              "hide": false,
+              "datasource": "${DS_PROMETHEUS}"
+            }
+          ],
+          "transformations": []
+        },
+        {
+          "id": 6,
+          "title": "GPU Memory In Use Over Time",
+          "description": "Total framebuffer currently in use across the fleet.",
+          "type": "barchart",
+          "pluginVersion": "13.0.1",
+          "datasource": "${DS_PROMETHEUS}",
+          "gridPos": {
+            "x": 13,
+            "y": 21,
+            "w": 11,
+            "h": 8
+          },
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "fixedColor": "blue",
+                "mode": "fixed"
+              },
+              "custom": {
+                "axisBorderShow": false,
+                "axisCenteredZero": false,
+                "axisColorMode": "text",
+                "axisLabel": "",
+                "axisPlacement": "auto",
+                "fillOpacity": 80,
+                "gradientMode": "none",
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "lineWidth": 1,
+                "scaleDistribution": {
+                  "type": "linear"
+                },
+                "thresholdsStyle": {
+                  "mode": "off"
+                }
+              },
+              "decimals": 1,
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": 0
+                  },
+                  {
+                    "color": "red",
+                    "value": 80
+                  }
+                ]
+              },
+              "unit": "bytes"
+            },
+            "overrides": []
+          },
+          "options": {
+            "barRadius": 0,
+            "barWidth": 0.97,
+            "colorMode": "value",
+            "fullHighlight": false,
+            "graphMode": "area",
+            "groupWidth": 0.7,
+            "justifyMode": "center",
+            "legend": {
+              "calcs": [],
+              "displayMode": "list",
+              "placement": "bottom",
+              "showLegend": true
+            },
+            "orientation": "auto",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "showValue": "auto",
+            "stacking": "none",
+            "textMode": "auto",
+            "tooltip": {
+              "hideZeros": false,
+              "mode": "single",
+              "sort": "none"
+            },
+            "xTickLabelRotation": 0,
+            "xTickLabelSpacing": 0
+          },
+          "links": [
+            {
+              "targetBlank": false,
+              "title": "See memory use by workload",
+              "url": "/d/gpu-by-app?viewPanel=11&${__all_variables}&from=${__from}&to=${__to}"
+            }
+          ],
+          "targets": [
+            {
+              "expr": "sum(DCGM_FI_DEV_FB_USED) * 1024 * 1024",
+              "instant": false,
+              "legendFormat": "Memory used",
+              "range": true,
+              "refId": "A",
+              "hide": false,
+              "datasource": "${DS_PROMETHEUS}"
+            }
+          ],
+          "transformations": []
+        },
+        {
+          "id": 17,
+          "title": "Available vs Allocated GPUs by Server",
+          "description": "One row per node. Each node's capacity counts in exactly one place, never both: MIG-disabled nodes report real numbers under Total/Used/Free GPUs and 0/0/0 under the MIG-slice columns, MIG-enabled nodes report the reverse. Total GPUs + Total MIG slices, summed across every row, equals the fleet's Total devices figure exactly. Copied from Fleet Telemetry's panel of the same name, with the $node filter removed.",
+          "type": "table",
+          "pluginVersion": "13.0.1",
+          "datasource": "${DS_PROMETHEUS}",
+          "gridPos": {
+            "x": 0,
+            "y": 29,
+            "w": 24,
+            "h": 9
+          },
+          "fieldConfig": {
+            "defaults": {
+              "custom": {
+                "align": "left",
+                "cellOptions": {
+                  "type": "auto"
+                },
+                "footer": {
+                  "reducers": []
+                },
+                "inspect": false,
+                "minWidth": 100
+              },
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": 0
+                  },
+                  {
+                    "color": "red",
+                    "value": 80
+                  }
+                ]
+              }
+            },
+            "overrides": [
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "Total GPUs"
+                },
+                "properties": [
+                  {
+                    "id": "unit",
+                    "value": "none"
+                  },
+                  {
+                    "id": "decimals",
+                    "value": 0
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "Used GPUs"
+                },
+                "properties": [
+                  {
+                    "id": "unit",
+                    "value": "none"
+                  },
+                  {
+                    "id": "decimals",
+                    "value": 0
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "Free GPUs"
+                },
+                "properties": [
+                  {
+                    "id": "unit",
+                    "value": "none"
+                  },
+                  {
+                    "id": "decimals",
+                    "value": 0
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "Total GPU Slices"
+                },
+                "properties": [
+                  {
+                    "id": "unit",
+                    "value": "none"
+                  },
+                  {
+                    "id": "decimals",
+                    "value": 0
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "Used GPU Slices"
+                },
+                "properties": [
+                  {
+                    "id": "unit",
+                    "value": "none"
+                  },
+                  {
+                    "id": "decimals",
+                    "value": 0
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "Free GPU Slices"
+                },
+                "properties": [
+                  {
+                    "id": "unit",
+                    "value": "none"
+                  },
+                  {
+                    "id": "decimals",
+                    "value": 0
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byNames",
+                  "options": {
+                    "mode": "include",
+                    "names": [
+                      "Total GPUs",
+                      "Used GPUs",
+                      "Free GPUs",
+                      "Total GPU Slices",
+                      "Used GPU Slices",
+                      "Free GPU Slices"
+                    ]
+                  }
+                },
+                "properties": [
+                  {
+                    "id": "custom.footer.reducers",
+                    "value": [
+                      "sum"
+                    ]
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "Server"
+                },
+                "properties": [
+                  {
+                    "id": "custom.width",
+                    "value": 304
+                  }
+                ]
+              }
+            ]
+          },
+          "options": {
+            "cellHeight": "sm",
+            "showHeader": true
+          },
+          "links": [
+            {
+              "targetBlank": false,
+              "title": "See which application is using which GPU or MIG slice",
+              "url": "/d/gpu-fleet-telemetry?viewPanel=6&${__all_variables}&from=${__from}&to=${__to}"
+            }
+          ],
+          "targets": [
+            {
+              "expr": "((count by (Hostname) (count by (Hostname, UUID) (DCGM_FI_DEV_FB_USED))) unless on (Hostname) ((((count by (Hostname) (DCGM_FI_PROF_GR_ENGINE_ACTIVE{GPU_I_PROFILE!=\"\"}))\nor (count by (Hostname) (DCGM_FI_DEV_FB_USED) * 0)) > 0))) or ((count by (Hostname) (DCGM_FI_DEV_FB_USED) * 0) and on (Hostname) ((((count by (Hostname) (DCGM_FI_PROF_GR_ENGINE_ACTIVE{GPU_I_PROFILE!=\"\"}))\nor (count by (Hostname) (DCGM_FI_DEV_FB_USED) * 0)) > 0)))",
+              "format": "table",
+              "instant": true,
+              "refId": "A",
+              "hide": false,
+              "datasource": "${DS_PROMETHEUS}"
+            },
+            {
+              "expr": "(((count by (Hostname) (count by (Hostname, UUID) (DCGM_FI_PROF_GR_ENGINE_ACTIVE{exported_pod!=\"\"})))\nor (count by (Hostname) (DCGM_FI_DEV_FB_USED) * 0)) unless on (Hostname) ((((count by (Hostname) (DCGM_FI_PROF_GR_ENGINE_ACTIVE{GPU_I_PROFILE!=\"\"}))\nor (count by (Hostname) (DCGM_FI_DEV_FB_USED) * 0)) > 0))) or ((count by (Hostname) (DCGM_FI_DEV_FB_USED) * 0) and on (Hostname) ((((count by (Hostname) (DCGM_FI_PROF_GR_ENGINE_ACTIVE{GPU_I_PROFILE!=\"\"}))\nor (count by (Hostname) (DCGM_FI_DEV_FB_USED) * 0)) > 0)))",
+              "format": "table",
+              "instant": true,
+              "refId": "B",
+              "hide": false,
+              "datasource": "${DS_PROMETHEUS}"
+            },
+            {
+              "expr": "(((count by (Hostname) (count by (Hostname, UUID) (DCGM_FI_DEV_FB_USED))) unless on (Hostname) ((((count by (Hostname) (DCGM_FI_PROF_GR_ENGINE_ACTIVE{GPU_I_PROFILE!=\"\"}))\nor (count by (Hostname) (DCGM_FI_DEV_FB_USED) * 0)) > 0))) or ((count by (Hostname) (DCGM_FI_DEV_FB_USED) * 0) and on (Hostname) ((((count by (Hostname) (DCGM_FI_PROF_GR_ENGINE_ACTIVE{GPU_I_PROFILE!=\"\"}))\nor (count by (Hostname) (DCGM_FI_DEV_FB_USED) * 0)) > 0)))) - ((((count by (Hostname) (count by (Hostname, UUID) (DCGM_FI_PROF_GR_ENGINE_ACTIVE{exported_pod!=\"\"})))\nor (count by (Hostname) (DCGM_FI_DEV_FB_USED) * 0)) unless on (Hostname) ((((count by (Hostname) (DCGM_FI_PROF_GR_ENGINE_ACTIVE{GPU_I_PROFILE!=\"\"}))\nor (count by (Hostname) (DCGM_FI_DEV_FB_USED) * 0)) > 0))) or ((count by (Hostname) (DCGM_FI_DEV_FB_USED) * 0) and on (Hostname) ((((count by (Hostname) (DCGM_FI_PROF_GR_ENGINE_ACTIVE{GPU_I_PROFILE!=\"\"}))\nor (count by (Hostname) (DCGM_FI_DEV_FB_USED) * 0)) > 0))))",
+              "format": "table",
+              "instant": true,
+              "refId": "C",
+              "hide": false,
+              "datasource": "${DS_PROMETHEUS}"
+            },
+            {
+              "expr": "(count by (Hostname) (DCGM_FI_PROF_GR_ENGINE_ACTIVE{GPU_I_PROFILE!=\"\"}))\nor (count by (Hostname) (DCGM_FI_DEV_FB_USED) * 0)",
+              "format": "table",
+              "instant": true,
+              "refId": "D",
+              "hide": false,
+              "datasource": "${DS_PROMETHEUS}"
+            },
+            {
+              "expr": "(count by (Hostname) (DCGM_FI_PROF_GR_ENGINE_ACTIVE{GPU_I_PROFILE!=\"\", exported_pod!=\"\"}))\nor (count by (Hostname) (DCGM_FI_DEV_FB_USED) * 0)",
+              "format": "table",
+              "instant": true,
+              "refId": "E",
+              "hide": false,
+              "datasource": "${DS_PROMETHEUS}"
+            },
+            {
+              "expr": "((count by (Hostname) (DCGM_FI_PROF_GR_ENGINE_ACTIVE{GPU_I_PROFILE!=\"\"}))\nor (count by (Hostname) (DCGM_FI_DEV_FB_USED) * 0)) - ((count by (Hostname) (DCGM_FI_PROF_GR_ENGINE_ACTIVE{GPU_I_PROFILE!=\"\", exported_pod!=\"\"}))\nor (count by (Hostname) (DCGM_FI_DEV_FB_USED) * 0))",
+              "format": "table",
+              "instant": true,
+              "refId": "F",
+              "hide": false,
+              "datasource": "${DS_PROMETHEUS}"
+            },
+            {
+              "expr": "max by (Hostname, label_nvidia_com_mig_config) (label_replace(kube_node_labels{label_nvidia_com_mig_config=~\".+\"}, \"Hostname\", \"$1\", \"node\", \"(.*)\"))",
+              "format": "table",
+              "instant": true,
+              "refId": "G",
+              "hide": false,
+              "datasource": "${DS_PROMETHEUS}"
+            }
+          ],
+          "transformations": [
+            {
+              "id": "merge",
+              "options": {}
+            },
+            {
+              "id": "organize",
+              "options": {
+                "excludeByName": {
+                  "Time": true,
+                  "Time 1": true,
+                  "Time 2": true,
+                  "Time 3": true,
+                  "Time 4": true,
+                  "Time 5": true,
+                  "Time 6": true,
+                  "Time 7": true,
+                  "Value #G": true
+                },
+                "renameByName": {
+                  "Hostname": "Server",
+                  "Value #A": "Total GPUs",
+                  "Value #B": "Used GPUs",
+                  "Value #C": "Free GPUs",
+                  "Value #D": "Total GPU Slices",
+                  "Value #E": "Used GPU Slices",
+                  "Value #F": "Free GPU Slices",
+                  "label_nvidia_com_mig_config": "GPU Slice Setup"
+                }
+              }
+            },
+            {
+              "id": "sortBy",
+              "options": {
+                "fields": {},
+                "sort": [
+                  {
+                    "field": "Server"
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": 8,
+          "title": "Electricity Usage Over Time",
+          "description": "Total sustained power draw across the fleet, tracked over whatever range the time picker (top right) is set to.",
+          "type": "barchart",
+          "pluginVersion": "13.0.1",
+          "datasource": "${DS_PROMETHEUS}",
+          "gridPos": {
+            "x": 0,
+            "y": 38,
+            "w": 17,
+            "h": 8
+          },
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "fixedColor": "yellow",
+                "mode": "fixed"
+              },
+              "custom": {
+                "axisBorderShow": false,
+                "axisCenteredZero": false,
+                "axisColorMode": "text",
+                "axisLabel": "",
+                "axisPlacement": "auto",
+                "fillOpacity": 30,
+                "gradientMode": "opacity",
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "lineWidth": 1,
+                "scaleDistribution": {
+                  "type": "linear"
+                },
+                "thresholdsStyle": {
+                  "mode": "off"
+                }
+              },
+              "min": 0,
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": 0
+                  },
+                  {
+                    "color": "red",
+                    "value": 80
+                  }
+                ]
+              },
+              "unit": "watt"
+            },
+            "overrides": []
+          },
+          "options": {
+            "annotations": {
+              "clustering": -1,
+              "multiLane": false
+            },
+            "barRadius": 0,
+            "barWidth": 0.97,
+            "fullHighlight": false,
+            "groupWidth": 0.7,
+            "legend": {
+              "calcs": [],
+              "displayMode": "list",
+              "placement": "bottom",
+              "showLegend": true
+            },
+            "orientation": "auto",
+            "showValue": "auto",
+            "stacking": "none",
+            "tooltip": {
+              "hideZeros": false,
+              "mode": "single",
+              "sort": "none"
+            },
+            "xTickLabelRotation": 0,
+            "xTickLabelSpacing": 0
+          },
+          "links": [
+            {
+              "targetBlank": false,
+              "title": "See power draw by node",
+              "url": "/d/gpu-fleet-telemetry?viewPanel=13&${__all_variables}&from=${__from}&to=${__to}"
+            }
+          ],
+          "targets": [
+            {
+              "expr": "sum(avg by (UUID) (DCGM_FI_DEV_POWER_USAGE))",
+              "instant": false,
+              "legendFormat": "Electricity",
+              "range": true,
+              "refId": "A",
+              "hide": false,
+              "datasource": "${DS_PROMETHEUS}"
+            }
+          ],
+          "transformations": []
+        },
+        {
+          "id": 10,
+          "title": "Total Electricity Used",
+          "description": "Total energy consumed across the fleet over whatever range the time picker (top right) is set to. Counter is in millijoules; dividing by 3.6e9 converts to kWh. De-duplicated by UUID.",
+          "type": "gauge",
+          "pluginVersion": "13.0.1",
+          "datasource": "${DS_PROMETHEUS}",
+          "gridPos": {
+            "x": 17,
+            "y": 38,
+            "w": 7,
+            "h": 8
+          },
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "fixedColor": "orange",
+                "mode": "fixed"
+              },
+              "decimals": 1,
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": 0
+                  },
+                  {
+                    "color": "red",
+                    "value": 80
+                  }
+                ]
+              },
+              "unit": "kwatth"
+            },
+            "overrides": []
+          },
+          "options": {
+            "barShape": "flat",
+            "barWidthFactor": 0.5,
+            "effects": {
+              "barGlow": false,
+              "centerGlow": false,
+              "gradient": true
+            },
+            "endpointMarker": "point",
+            "minVizHeight": 75,
+            "minVizWidth": 75,
+            "orientation": "auto",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "segmentCount": 1,
+            "segmentSpacing": 0.3,
+            "shape": "gauge",
+            "showThresholdLabels": false,
+            "showThresholdMarkers": false,
+            "sizing": "auto",
+            "sparkline": true,
+            "textMode": "auto"
+          },
+          "links": [
+            {
+              "targetBlank": false,
+              "title": "See power draw by node",
+              "url": "/d/gpu-by-app?viewPanel=13&${__all_variables}&from=${__from}&to=${__to}"
+            }
+          ],
+          "targets": [
+            {
+              "expr": "sum(avg by (UUID) (increase(DCGM_FI_DEV_TOTAL_ENERGY_CONSUMPTION[$__range]))) / 3.6e9",
+              "instant": true,
+              "refId": "A",
+              "hide": false,
+              "datasource": "${DS_PROMETHEUS}"
+            }
+          ],
+          "transformations": []
+        },
+        {
+          "id": 16,
+          "title": "Which Team Is Using Which GPU",
+          "description": "Which GPU on which node is allocated to which application, and how much, whether that's a whole card or a shared slice. GPU Slice utilisation, GPU-equivalents, and GPU memory used are per-row (per device). Total GPU used, Allocated GPUs, and MIG slices allocated are per-application totals, the true value is repeated on every row that application spans, not divided, so they're deliberately left out of the footer's sum, summing a repeated value would multiply-count that application by its row count.",
+          "type": "table",
+          "pluginVersion": "13.0.1",
+          "datasource": "${DS_PROMETHEUS}",
+          "gridPos": {
+            "x": 0,
+            "y": 46,
+            "w": 24,
+            "h": 15
+          },
+          "fieldConfig": {
+            "defaults": {
+              "custom": {
+                "align": "left",
+                "cellOptions": {
+                  "type": "auto"
+                },
+                "footer": {
+                  "reducers": []
+                },
+                "inspect": false,
+                "minWidth": 100
+              },
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": 0
+                  },
+                  {
+                    "color": "red",
+                    "value": 80
+                  }
+                ]
+              }
+            },
+            "overrides": [
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "GPU Slice utilisation"
+                },
+                "properties": [
+                  {
+                    "id": "unit",
+                    "value": "percentunit"
+                  },
+                  {
+                    "id": "decimals",
+                    "value": 1
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "GPU Amount Used"
+                },
+                "properties": [
+                  {
+                    "id": "unit",
+                    "value": "none"
+                  },
+                  {
+                    "id": "decimals",
+                    "value": 3
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "GPU Memory Used"
+                },
+                "properties": [
+                  {
+                    "id": "unit",
+                    "value": "bytes"
+                  },
+                  {
+                    "id": "decimals",
+                    "value": 1
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "Total GPU Used"
+                },
+                "properties": [
+                  {
+                    "id": "unit",
+                    "value": "none"
+                  },
+                  {
+                    "id": "decimals",
+                    "value": 3
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "Allocated GPUs"
+                },
+                "properties": [
+                  {
+                    "id": "unit",
+                    "value": "none"
+                  },
+                  {
+                    "id": "decimals",
+                    "value": 2
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "GPU Slices Allocated"
+                },
+                "properties": [
+                  {
+                    "id": "unit",
+                    "value": "none"
+                  },
+                  {
+                    "id": "decimals",
+                    "value": 2
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byNames",
+                  "options": {
+                    "mode": "include",
+                    "names": [
+                      "GPU Amount Used",
+                      "GPU Memory Used"
+                    ]
+                  }
+                },
+                "properties": [
+                  {
+                    "id": "custom.footer.reducers",
+                    "value": [
+                      "sum"
+                    ]
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "Server"
+                },
+                "properties": [
+                  {
+                    "id": "custom.width",
+                    "value": 293
+                  }
+                ]
+              }
+            ]
+          },
+          "options": {
+            "cellHeight": "sm",
+            "showHeader": true
+          },
+          "links": [
+            {
+              "targetBlank": false,
+              "title": "See the full per-workload breakdown",
+              "url": "/d/gpu-by-app?viewPanel=20&${__all_variables}&from=${__from}&to=${__to}"
+            }
+          ],
+          "targets": [
+            {
+              "expr": "((avg by (exported_namespace, exported_pod, Hostname, GPU_I_PROFILE) (DCGM_FI_PROF_GR_ENGINE_ACTIVE{exported_pod!=\"\"})) * on (Hostname) group_left(label_nvidia_com_mig_config) label_replace(kube_node_labels{label_nvidia_com_mig_config=~\".+\"}, \"Hostname\", \"$1\", \"node\", \"(.*)\")) or ((avg by (exported_namespace, exported_pod, Hostname, GPU_I_PROFILE) (DCGM_FI_PROF_GR_ENGINE_ACTIVE{exported_pod!=\"\"})) unless on (Hostname) label_replace(kube_node_labels{label_nvidia_com_mig_config=~\".+\"}, \"Hostname\", \"$1\", \"node\", \"(.*)\"))",
+              "format": "table",
+              "instant": true,
+              "refId": "A",
+              "hide": false,
+              "datasource": "${DS_PROMETHEUS}"
+            },
+            {
+              "expr": "((sum by (exported_namespace, exported_pod, Hostname, GPU_I_PROFILE) (\n  DCGM_FI_PROF_GR_ENGINE_ACTIVE{exported_pod!=\"\", GPU_I_PROFILE=~\"1g.*\"} * 1/7\n  or DCGM_FI_PROF_GR_ENGINE_ACTIVE{exported_pod!=\"\", GPU_I_PROFILE=~\"2g.*\"} * 2/7\n  or DCGM_FI_PROF_GR_ENGINE_ACTIVE{exported_pod!=\"\", GPU_I_PROFILE=~\"3g.*\"} * 3/7\n  or DCGM_FI_PROF_GR_ENGINE_ACTIVE{exported_pod!=\"\", GPU_I_PROFILE=~\"4g.*\"} * 4/7\n  or DCGM_FI_PROF_GR_ENGINE_ACTIVE{exported_pod!=\"\", GPU_I_PROFILE=~\"7g.*\"} * 7/7\n  or DCGM_FI_PROF_GR_ENGINE_ACTIVE{exported_pod!=\"\", GPU_I_PROFILE=\"\"}\n)) * on (Hostname) group_left(label_nvidia_com_mig_config) label_replace(kube_node_labels{label_nvidia_com_mig_config=~\".+\"}, \"Hostname\", \"$1\", \"node\", \"(.*)\")) or ((sum by (exported_namespace, exported_pod, Hostname, GPU_I_PROFILE) (\n  DCGM_FI_PROF_GR_ENGINE_ACTIVE{exported_pod!=\"\", GPU_I_PROFILE=~\"1g.*\"} * 1/7\n  or DCGM_FI_PROF_GR_ENGINE_ACTIVE{exported_pod!=\"\", GPU_I_PROFILE=~\"2g.*\"} * 2/7\n  or DCGM_FI_PROF_GR_ENGINE_ACTIVE{exported_pod!=\"\", GPU_I_PROFILE=~\"3g.*\"} * 3/7\n  or DCGM_FI_PROF_GR_ENGINE_ACTIVE{exported_pod!=\"\", GPU_I_PROFILE=~\"4g.*\"} * 4/7\n  or DCGM_FI_PROF_GR_ENGINE_ACTIVE{exported_pod!=\"\", GPU_I_PROFILE=~\"7g.*\"} * 7/7\n  or DCGM_FI_PROF_GR_ENGINE_ACTIVE{exported_pod!=\"\", GPU_I_PROFILE=\"\"}\n)) unless on (Hostname) label_replace(kube_node_labels{label_nvidia_com_mig_config=~\".+\"}, \"Hostname\", \"$1\", \"node\", \"(.*)\"))",
+              "format": "table",
+              "instant": true,
+              "refId": "B",
+              "hide": false,
+              "datasource": "${DS_PROMETHEUS}"
+            },
+            {
+              "expr": "((sum by (exported_namespace, exported_pod, Hostname, GPU_I_PROFILE) (DCGM_FI_DEV_FB_USED{exported_pod!=\"\"}) * 1024 * 1024) * on (Hostname) group_left(label_nvidia_com_mig_config) label_replace(kube_node_labels{label_nvidia_com_mig_config=~\".+\"}, \"Hostname\", \"$1\", \"node\", \"(.*)\")) or ((sum by (exported_namespace, exported_pod, Hostname, GPU_I_PROFILE) (DCGM_FI_DEV_FB_USED{exported_pod!=\"\"}) * 1024 * 1024) unless on (Hostname) label_replace(kube_node_labels{label_nvidia_com_mig_config=~\".+\"}, \"Hostname\", \"$1\", \"node\", \"(.*)\"))",
+              "format": "table",
+              "instant": true,
+              "refId": "C",
+              "hide": false,
+              "datasource": "${DS_PROMETHEUS}"
+            },
+            {
+              "expr": "(avg by (exported_namespace, exported_pod, Hostname, GPU_I_PROFILE) (DCGM_FI_PROF_GR_ENGINE_ACTIVE{exported_pod!=\"\"}) * 0)\n+ on (exported_namespace, exported_pod) group_left() (\nsum by (exported_namespace, exported_pod) (\n  DCGM_FI_PROF_GR_ENGINE_ACTIVE{exported_pod!=\"\", GPU_I_PROFILE=~\"1g.*\"} * 1/7\n  or DCGM_FI_PROF_GR_ENGINE_ACTIVE{exported_pod!=\"\", GPU_I_PROFILE=~\"2g.*\"} * 2/7\n  or DCGM_FI_PROF_GR_ENGINE_ACTIVE{exported_pod!=\"\", GPU_I_PROFILE=~\"3g.*\"} * 3/7\n  or DCGM_FI_PROF_GR_ENGINE_ACTIVE{exported_pod!=\"\", GPU_I_PROFILE=~\"4g.*\"} * 4/7\n  or DCGM_FI_PROF_GR_ENGINE_ACTIVE{exported_pod!=\"\", GPU_I_PROFILE=~\"7g.*\"} * 7/7\n  or DCGM_FI_PROF_GR_ENGINE_ACTIVE{exported_pod!=\"\", GPU_I_PROFILE=\"\"}\n)\n)",
+              "format": "table",
+              "instant": true,
+              "refId": "D",
+              "hide": false,
+              "datasource": "${DS_PROMETHEUS}"
+            },
+            {
+              "expr": "(avg by (exported_namespace, exported_pod, Hostname, GPU_I_PROFILE) (DCGM_FI_PROF_GR_ENGINE_ACTIVE{exported_pod!=\"\"}) * 0)\n+ on (exported_namespace, exported_pod) group_left() (\n(count by (exported_namespace, exported_pod) (DCGM_FI_PROF_GR_ENGINE_ACTIVE{exported_pod!=\"\", GPU_I_PROFILE=\"\"}))\nor (0 * count by (exported_namespace, exported_pod) (DCGM_FI_PROF_GR_ENGINE_ACTIVE{exported_pod!=\"\"}))\n)",
+              "format": "table",
+              "instant": true,
+              "refId": "E",
+              "hide": false,
+              "datasource": "${DS_PROMETHEUS}"
+            },
+            {
+              "expr": "(avg by (exported_namespace, exported_pod, Hostname, GPU_I_PROFILE) (DCGM_FI_PROF_GR_ENGINE_ACTIVE{exported_pod!=\"\"}) * 0)\n+ on (exported_namespace, exported_pod) group_left() (\n(count by (exported_namespace, exported_pod) (DCGM_FI_PROF_GR_ENGINE_ACTIVE{exported_pod!=\"\", GPU_I_PROFILE!=\"\"}))\nor (0 * count by (exported_namespace, exported_pod) (DCGM_FI_PROF_GR_ENGINE_ACTIVE{exported_pod!=\"\"}))\n)",
+              "format": "table",
+              "instant": true,
+              "refId": "F",
+              "hide": false,
+              "datasource": "${DS_PROMETHEUS}"
+            }
+          ],
+          "transformations": [
+            {
+              "id": "merge",
+              "options": {}
+            },
+            {
+              "id": "organize",
+              "options": {
+                "excludeByName": {
+                  "GPU_I_PROFILE": true,
+                  "Time": true,
+                  "Time 1": true,
+                  "Time 2": true,
+                  "Time 3": true,
+                  "Time 4": true,
+                  "Time 5": true,
+                  "Time 6": true,
+                  "label_nvidia_com_mig_config": true
+                },
+                "renameByName": {
+                  "Hostname": "Server",
+                  "Value #A": "GPU Slice utilisation",
+                  "Value #B": "GPU Amount Used",
+                  "Value #C": "GPU Memory Used",
+                  "Value #D": "Total GPU Used",
+                  "Value #E": "Allocated GPUs",
+                  "Value #F": "GPU Slices Allocated",
+                  "exported_namespace": "Team",
+                  "exported_pod": "Application",
+                  "label_nvidia_com_mig_config": "GPU Slice Setup"
+                }
+              }
+            },
+            {
+              "id": "sortBy",
+              "options": {
+                "fields": {},
+                "sort": [
+                  {
+                    "desc": true,
+                    "field": "GPU Amount Used"
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }

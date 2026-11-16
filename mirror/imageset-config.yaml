@@ -1,0 +1,27 @@
+# Only needed on disconnected (air-gapped) clusters.
+# Mirrors the Grafana Operator from the community catalog plus the Grafana image.
+#
+# Match the catalog tag to your cluster's minor version:
+#   oc get clusterversion version -o jsonpath='{.status.desired.version}'
+#
+# The operator bundle pulls from ghcr.io and the Grafana image from docker.io,
+# so the mirror host needs to reach both, not only registry.redhat.io.
+#
+# Usage (oc-mirror v2):
+#   oc mirror -c mirror/imageset-config.yaml --workspace file:///opt/mirror/grafana \
+#     docker://quay.ocp.lan:8443 --v2          # CHANGE_ME: your mirror registry
+# Then apply the CatalogSource and IDMS that oc-mirror writes under
+#   /opt/mirror/grafana/working-dir/cluster-resources/
+kind: ImageSetConfiguration
+apiVersion: mirror.openshift.io/v2alpha1
+mirror:
+  operators:
+    - catalog: registry.redhat.io/redhat/community-operator-index:v4.18   # CHANGE_ME: your OCP minor version
+      packages:
+        - name: grafana-operator
+          channels:
+            - name: v5
+  additionalImages:
+    # The tag must match the image your Grafana CR runs (see 02-grafana/02-grafana.yaml).
+    # Tested with 13.0.1. Pin the version you validated.
+    - name: docker.io/grafana/grafana:13.0.1

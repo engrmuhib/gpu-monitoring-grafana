@@ -1,0 +1,40 @@
+# Prometheus datasource pointing at OpenShift's Thanos Querier.
+#
+# Port 9091 is the cluster-wide endpoint. Do not use 9092: it is tenancy-aware,
+# rejects queries without a namespace parameter, and breaks every
+# cross-namespace panel in these dashboards.
+#
+# The datasource name "Thanos" matters: every GrafanaDashboard CR maps its
+# DS_PROMETHEUS input to a datasource with this name. Rename it in both places
+# or neither.
+---
+apiVersion: grafana.integreatly.org/v1beta1
+kind: GrafanaDatasource
+metadata:
+  name: thanos-querier
+  namespace: gpu-monitoring
+spec:
+  instanceSelector:
+    matchLabels:
+      dashboards: gpu-grafana
+  valuesFrom:
+    - targetPath: secureJsonData.httpHeaderValue1
+      valueFrom:
+        secretKeyRef:
+          name: grafana-thanos-reader-token
+          key: token
+  datasource:
+    name: Thanos
+    type: prometheus
+    access: proxy
+    url: https://thanos-querier.openshift-monitoring.svc.cluster.local:9091
+    isDefault: true
+    editable: false
+    jsonData:
+      httpHeaderName1: Authorization
+      timeInterval: 30s
+      # Simple and works everywhere. For strict TLS, replace with
+      # tlsAuthWithCACert plus the OpenShift service CA bundle.
+      tlsSkipVerify: true
+    secureJsonData:
+      httpHeaderValue1: "Bearer ${token}"

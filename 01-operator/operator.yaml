@@ -1,0 +1,36 @@
+# Namespace, OperatorGroup and Subscription for the Grafana Operator (v5).
+#
+# Before applying:
+#   - spec.source: name of the CatalogSource that carries grafana-operator.
+#       Connected clusters:    community-operators
+#       Disconnected clusters: the CatalogSource oc-mirror generated
+#       Check with: oc get catalogsource -n openshift-marketplace
+#
+# installPlanApproval is Manual on purpose. On a disconnected cluster an automatic
+# upgrade can chase a CSV that was never mirrored and wedge the subscription.
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: gpu-monitoring
+---
+apiVersion: operators.coreos.com/v1
+kind: OperatorGroup
+metadata:
+  name: gpu-monitoring-og
+  namespace: gpu-monitoring
+spec:
+  targetNamespaces:
+    - gpu-monitoring
+---
+apiVersion: operators.coreos.com/v1alpha1
+kind: Subscription
+metadata:
+  name: grafana-operator
+  namespace: gpu-monitoring
+spec:
+  channel: v5
+  name: grafana-operator
+  source: community-operators            # CHANGE_ME if you use a mirrored CatalogSource
+  sourceNamespace: openshift-marketplace
+  installPlanApproval: Manual
